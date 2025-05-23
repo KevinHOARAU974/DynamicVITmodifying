@@ -23,7 +23,7 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
                 layer_scale_init_value=args.layer_scale_init_value,
                 head_init_scale=args.head_init_scale,
                 num_classes=args.nb_classes)
-        teacher_model = ConvNeXt_Teacher()
+        teacher_model = ConvNeXt_Teacher(num_classes=args.nb_classes)
         pretrained = torch.load(pretrained_model_path, map_location='cpu')
         
     elif args.model == 'convnext-s':
