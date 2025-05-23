@@ -154,9 +154,14 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
             window_size=7)
     
     
+    
     if 'convnext' in args.model or 'deit' in args.model or 'swin' in args.model:
-        pretrained = pretrained['model']
-        
+        if 'model' in pretrained:
+            pretrained = pretrained['model']
+        elif 'state_dict' in pretrained:
+            pretrained = pretrained['state_dict']
+        pretrained = {k.replace('module.', '').replace('model.', ''): v for k, v in pretrained.items()}
+                
     
     utils.load_state_dict(model, pretrained)
     utils.load_state_dict(teacher_model, pretrained)
