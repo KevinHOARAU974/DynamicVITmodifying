@@ -56,7 +56,7 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
         model = LVViTDiffPruning(
             patch_size=16, embed_dim=384, depth=16, num_heads=6, mlp_ratio=3.,
             p_emb='4_2',skip_lam=2., return_dense=True,mix_token=True,
-            pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill
+            pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill,
         )
         pretrained = torch.load(pretrained_model_path, map_location='cpu')
         teacher_model = LVViT_Teacher(
@@ -85,11 +85,11 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
         print('token_ratio =', KEEP_RATE, 'at layer', PRUNING_LOC)
         model = VisionTransformerDiffPruning(
             patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, 
-        pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill
+        pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill, num_classes = args.nb_classes
         )
         pretrained = torch.load(pretrained_model_path , map_location='cpu')
         teacher_model = VisionTransformerTeacher(
-            patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True)
+            patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, num_classes = args.nb_classes)
     elif args.model == 'deit-b':
         PRUNING_LOC = [3, 6, 9]
         KEEP_RATE = [sparse_ratio[0], sparse_ratio[0] ** 2, sparse_ratio[0] ** 3]
