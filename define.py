@@ -97,11 +97,11 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
         print('token_ratio =', KEEP_RATE, 'at layer', PRUNING_LOC)
         model = VisionTransformerDiffPruning(
             patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, 
-        pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill, drop_path_rate=args.drop_path
+        pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill, drop_path_rate=args.drop_path, num_classes = args.nb_classes
         )
         pretrained = torch.load(pretrained_model_path, map_location='cpu')
         teacher_model = VisionTransformerTeacher(
-            patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True)
+            patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, num_classes = args.nb_classes)
     
     elif args.model == 'vit_b_32':
         PRUNING_LOC = [3, 6, 9]
@@ -109,11 +109,11 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
         print('token_ratio =', KEEP_RATE, 'at layer', PRUNING_LOC)
         model = VisionTransformerDiffPruning(
             patch_size=32, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, 
-        pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill, drop_path_rate=args.drop_path
+        pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill, drop_path_rate=args.drop_path, num_classes = args.nb_classes
         )
         pretrained = torch.load(pretrained_model_path, map_location='cpu')
         teacher_model = VisionTransformerTeacher(
-            patch_size=32, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True)
+            patch_size=32, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, num_classes = args.nb_classes)
         
     elif args.model == 'swin-t':
         model = AdaSwinTransformer(
