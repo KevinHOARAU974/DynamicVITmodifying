@@ -90,7 +90,8 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
         pretrained = torch.load(pretrained_model_path , map_location='cpu')
         teacher_model = VisionTransformerTeacher(
             patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, num_classes = args.nb_classes)
-    elif args.model == 'deit-b':
+        
+    elif args.model == 'deit-b' or args.model == 'vit_b_16':
         PRUNING_LOC = [3, 6, 9]
         KEEP_RATE = [sparse_ratio[0], sparse_ratio[0] ** 2, sparse_ratio[0] ** 3]
         print('token_ratio =', KEEP_RATE, 'at layer', PRUNING_LOC)
@@ -101,6 +102,18 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
         pretrained = torch.load(pretrained_model_path, map_location='cpu')
         teacher_model = VisionTransformerTeacher(
             patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True)
+    
+    elif args.model == 'vit_b_32':
+        PRUNING_LOC = [3, 6, 9]
+        KEEP_RATE = [sparse_ratio[0], sparse_ratio[0] ** 2, sparse_ratio[0] ** 3]
+        print('token_ratio =', KEEP_RATE, 'at layer', PRUNING_LOC)
+        model = VisionTransformerDiffPruning(
+            patch_size=32, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, 
+        pruning_loc=PRUNING_LOC, token_ratio=KEEP_RATE, distill=args.distill, drop_path_rate=args.drop_path
+        )
+        pretrained = torch.load(pretrained_model_path, map_location='cpu')
+        teacher_model = VisionTransformerTeacher(
+            patch_size=32, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True)
         
     elif args.model == 'swin-t':
         model = AdaSwinTransformer(
@@ -155,7 +168,7 @@ def define_model_teacher(args, pretrained_model_path, sparse_ratio):
     
     
     
-    if 'convnext' in args.model or 'deit' in args.model or 'swin' in args.model:
+    if 'convnext' in args.model or 'deit' in args.model or 'swin' in args.model or 'vit_b' in args.model:
         if 'model' in pretrained:
             pretrained = pretrained['model']
         elif 'state_dict' in pretrained:
@@ -184,7 +197,7 @@ def define_criterion(args, teacher_model, criterion, sparse_ratio, KEEP_RATE):
         criterion = DistillDiffPruningLoss_dynamic(
             teacher_model, criterion, clf_weight=1.0, keep_ratio=KEEP_RATE, mse_token=False, ratio_weight=2.0, distill_weight=0.5
         )
-    elif 'deit' in args.model:
+    elif 'deit' in args.model or 'vit_b' in args.model:
         criterion = DistillDiffPruningLoss_dynamic(
             teacher_model, criterion, clf_weight=1.0, keep_ratio=KEEP_RATE, mse_token=True, ratio_weight=args.ratio_weight, distill_weight=0.5
         )
