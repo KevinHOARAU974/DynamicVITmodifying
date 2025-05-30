@@ -163,8 +163,10 @@ class DistillDiffPruningLoss_dynamic(torch.nn.Module):
                 in the first position and the distillation predictions as the second output
             labels: the labels for the base criterion
         """
-
-        pred, token_pred, mask, out_pred_score = outputs
+        if self.distill or self.kl:
+            pred, token_pred, mask, out_pred_score = outputs
+        else:
+            pred, out_pred_score = outputs
 
         pred_loss = 0.0
 
