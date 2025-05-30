@@ -57,6 +57,7 @@ def train_one_epoch(model: torch.nn.Module, criterion,
                 loss, loss_part = criterion(samples, output, targets)
         else: # full precision
             output = model(samples)
+            print(output)
             loss, loss_part = criterion(samples, output, targets)
 
         loss_value = loss.item()
