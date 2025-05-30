@@ -86,7 +86,7 @@ class ConvNextDistillDiffPruningLoss(torch.nn.Module):
                 loss_part.append(cls_kl_loss)
                 loss_part.append(token_kl_loss)
                 if self.count == 100:
-                    print('loss info: cls_loss=%.4f, ratio_loss=%.4f, cls_kl=%.4f, token_kl=%.4f, layer_mse=%.4f, feat_kl=%.4f' % (self.cls_loss / 100, self.ratio_loss / 100, self.cls_distill_loss/ 100, self.token_distill_loss/ 100, self.layer_mse_loss / 100, self.feat_distill_loss / 100))
+                    print('loss info: cls_loss=%.4f, ratio_loss=%.4f, cls_kl=%.4f, token_kl=%.4f' % (self.cls_loss / 100, self.ratio_loss / 100, self.cls_distill_loss/ 100, self.token_distill_loss/ 100))
                     self.count = 0
                     self.cls_loss = 0
                     self.ratio_loss = 0
