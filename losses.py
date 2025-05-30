@@ -9,7 +9,7 @@ class ConvNextDistillDiffPruningLoss(torch.nn.Module):
     This module wraps a standard criterion and adds an extra knowledge distillation loss by
     taking a teacher model prediction and using it as additional supervision.
     """
-    def __init__(self, teacher_model, base_criterion: torch.nn.Module, ratio_weight=10.0, distill_weight=0.5, keep_ratio=[0.9, 0.7, 0.5], clf_weight=0, mse_token=False, print_mode=True, swin_token=False, distill=True):
+    def __init__(self, teacher_model, base_criterion: torch.nn.Module, ratio_weight=10.0, distill_weight=0.5, keep_ratio=[0.9, 0.7, 0.5], clf_weight=0, mse_token=False, print_mode=True, swin_token=False, distill=True, kl=True):
         super().__init__()
         self.teacher_model = teacher_model
         self.base_criterion = base_criterion
@@ -26,6 +26,7 @@ class ConvNextDistillDiffPruningLoss(torch.nn.Module):
         self.distill_weight = distill_weight
         self.swin_token = swin_token
         self.distill = distill
+        self.kl = kl
 
         print('ratio_weight=', ratio_weight, 'distill_weight', distill_weight)
 
@@ -55,54 +56,67 @@ class ConvNextDistillDiffPruningLoss(torch.nn.Module):
 
         cls_loss = self.base_criterion(pred, labels)
 
-        with torch.no_grad():
-            cls_t, token_t = self.teacher_model(inputs)
 
-        cls_kl_loss = F.kl_div(
-                F.log_softmax(pred, dim=-1),
-                F.log_softmax(cls_t, dim=-1),
-                reduction='batchmean',
-                log_target=True
-            )
-
-        token_kl_loss = torch.pow(token_pred - token_t, 2).mean()
-
-        # print(cls_loss, pred_loss)
+        loss = loss = self.clf_weight * cls_loss + self.ratio_weight * pred_loss / len(out_pred_score)
+        
+        if self.distill or self.kl:
+            with torch.no_grad():
+                cls_t, token_t = self.teacher_model(inputs)
+        
         if self.distill==True:
-            loss = self.clf_weight * cls_loss + self.ratio_weight * pred_loss / len(out_pred_score) + self.distill_weight * cls_kl_loss + self.distill_weight * token_kl_loss
-        else:
-            loss = self.clf_weight * cls_loss + self.ratio_weight * pred_loss / len(out_pred_score)# + self.distill_weight * cls_kl_loss + self.distill_weight * token_kl_loss
+            token_kl_loss = torch.pow(token_pred - token_t, 2).mean()
+            
+            loss += self.distill_weight * token_kl_loss
+            
+        if self.kl==True:
+            cls_kl_loss = F.kl_div(
+                    F.log_softmax(pred, dim=-1),
+                    F.log_softmax(cls_t, dim=-1),
+                    reduction='batchmean',
+                    log_target=True
+                )
+            
+            loss += self.distill_weight * cls_kl_loss
+
+        # # print(cls_loss, pred_loss)
+        # if self.distill==True:
+        #     loss = self.clf_weight * cls_loss + self.ratio_weight * pred_loss / len(out_pred_score) + self.distill_weight * cls_kl_loss + self.distill_weight * token_kl_loss
+        # else:
+        #     loss = self.clf_weight * cls_loss + self.ratio_weight * pred_loss / len(out_pred_score)# + self.distill_weight * cls_kl_loss + self.distill_weight * token_kl_loss
+        
         loss_part = []
 
         if self.print_mode:
+            
+            self.cls_loss += cls_loss.item()
+            self.ratio_loss += pred_loss.item()
+            
+            loss_part.append(cls_loss)
+            loss_part.append(pred_loss)
+            
+            result = f"loss info: cls_loss={self.cls_loss / 100 : .4f}, ratio_loss={self.ratio_loss / 100 : .4f}, "
+            
             if self.distill:
-                self.cls_loss += cls_loss.item()
-                self.ratio_loss += pred_loss.item()
-                self.cls_distill_loss += cls_kl_loss.item()
                 self.token_distill_loss += token_kl_loss.item()
-                self.count += 1
-                loss_part.append(cls_loss)
-                loss_part.append(pred_loss)
-                loss_part.append(cls_kl_loss)
                 loss_part.append(token_kl_loss)
-                if self.count == 100:
-                    print('loss info: cls_loss=%.4f, ratio_loss=%.4f, cls_kl=%.4f, token_kl=%.4f' % (self.cls_loss / 100, self.ratio_loss / 100, self.cls_distill_loss/ 100, self.token_distill_loss/ 100))
-                    self.count = 0
-                    self.cls_loss = 0
-                    self.ratio_loss = 0
-                    self.cls_distill_loss = 0
-                    self.token_distill_loss = 0
-            else:
-                self.cls_loss += cls_loss.item()
-                self.ratio_loss += pred_loss.item()
-                self.count += 1
-                loss_part.append(cls_loss)
-                loss_part.append(pred_loss)
-                if self.count == 100:
-                    print('loss info: cls_loss=%.4f, ratio_loss=%.4f, layer_mse=%.4f, feat_kl=%.4f' % (self.cls_loss / 100, self.ratio_loss / 100, self.layer_mse_loss / 100, self.feat_distill_loss / 100))
-                    self.count = 0
-                    self.cls_loss = 0
-                    self.ratio_loss = 0
+                result += f"cls_kl={self.token_distill_loss/ 100 : .4f}, "
+            
+            if self.kl:
+                self.cls_distill_loss += cls_kl_loss.item()
+                loss_part.append(cls_kl_loss)
+                result += f"token_kl={self.cls_distill_loss/ 100 : .4f}"
+            
+            self.count += 1
+            
+            if self.count == 100:
+                #print('loss info: cls_loss=%.4f, ratio_loss=%.4f, cls_kl=%.4f, token_kl=%.4f' % (self.cls_loss / 100, self.ratio_loss / 100, self.cls_distill_loss/ 100, self.token_distill_loss/ 100))
+                print(result)
+                self.count = 0
+                self.cls_loss = 0
+                self.ratio_loss = 0
+                self.cls_distill_loss = 0
+                self.token_distill_loss = 0
+
         return loss, loss_part
 
 
