@@ -386,7 +386,7 @@ class VisionTransformerDiffPruning(nn.Module):
 
         self.score_predictor = nn.ModuleList(predictor_list)
 
-        
+        self.nb_token_1D = img_size//patch_size
 
         self.pruning_loc = pruning_loc
         self.token_ratio = token_ratio
@@ -429,7 +429,7 @@ class VisionTransformerDiffPruning(nn.Module):
 
         p_count = 0
         out_pred_prob = []
-        init_n = 14 * 14
+        init_n = self.nb_token_1D*self.nb_token_1D
         prev_decision = torch.ones(B, init_n, 1, dtype=x.dtype, device=x.device)
         policy = torch.ones(B, init_n + 1, 1, dtype=x.dtype, device=x.device)
         if self.viz_mode:
