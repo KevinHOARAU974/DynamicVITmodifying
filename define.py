@@ -195,11 +195,11 @@ def define_criterion(args, teacher_model, criterion, sparse_ratio, KEEP_RATE):
                 teacher_model, criterion, clf_weight=1.0, keep_ratio=sparse_ratio, mse_token=True, ratio_weight=10.0, swin_token=True, distill=args.distill, kl=args.kl)
     elif 'lvvit' in args.model:
         criterion = DistillDiffPruningLoss_dynamic(
-            teacher_model, criterion, clf_weight=1.0, keep_ratio=KEEP_RATE, mse_token=False, ratio_weight=2.0, distill_weight=0.5
+            teacher_model, criterion, clf_weight=1.0, keep_ratio=KEEP_RATE, mse_token=False, ratio_weight=2.0, distill_weight=0.5, distill=args.distill, kl=args.kl
         )
     elif 'deit' in args.model or 'vit_b' in args.model:
         criterion = DistillDiffPruningLoss_dynamic(
-            teacher_model, criterion, clf_weight=1.0, keep_ratio=KEEP_RATE, mse_token=True, ratio_weight=args.ratio_weight, distill_weight=0.5
+            teacher_model, criterion, clf_weight=1.0, keep_ratio=KEEP_RATE, mse_token=True, ratio_weight=args.ratio_weight, distill_weight=0.5, distill=args.distill, kl=args.kl
         )
     
     return criterion
